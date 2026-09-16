@@ -1,12 +1,9 @@
-from bot.utils.queue import (
-    acquire_user,
-    release_user
-)
-from aiogram.types import FSInputFile, Message
+from aiogram.types import Message, FSInputFile
 
 from bot.ai.highlights import generate_highlight_timestamps
 from bot.video.clipper import create_clip
 from bot.utils.cleanup import safe_delete
+from bot.utils.queue import acquire_user, release_user
 
 
 async def process_video(
@@ -16,9 +13,21 @@ async def process_video(
     total_clips: int
 ):
 
+    user_id = message.from_user.id
+
+    allowed = await acquire_user(user_id)
+
+    if not allowed:
+        await message.answer(
+            "⏳ Your previous task is still processing."
+        )
+        return
+
     status = await message.answer(
-        "🔍 Analyzing Video... 10%"
+        "🔍 Analyzing video... 10%"
     )
+
+    created_clips = []
 
     try:
 
@@ -27,11 +36,16 @@ async def process_video(
             total_clips
         )
 
-        await status.edit_text(
-            "🤖 Highlights Found... 30%"
-        )
+        if not timestamps:
+            await status.edit_text(
+                "❌ No highlights found."
+            )
+            await release_user(user_id)
+            return
 
-        created_clips = []
+        await status.edit_text(
+            "🤖 Highlights found... 30%"
+        )
 
         total = len(timestamps)
 
@@ -55,32 +69,35 @@ async def process_video(
             )
 
             await status.edit_text(
-                f"✂️ Creating Clips... {progress}%"
+                f"✂️ Creating clips... {progress}%"
             )
 
         await status.edit_text(
-            "📤 Uploading Clips... 90%"
+            "📤 Uploading clips... 90%"
         )
 
         for clip in created_clips:
 
             await message.answer_video(
-                video=FSInputFile(clip)
+                video=FSInputFile(clip),
+                caption="🎬 Generated Highlight Clip"
             )
 
         await status.edit_text(
             "✅ Completed 100%"
         )
 
+    except Exception as error:
+
+        await status.edit_text(
+            f"❌ Error:\n{error}"
+        )
+
+    finally:
+
         safe_delete(video_path)
 
         for clip in created_clips:
             safe_delete(clip)
 
-    except Exception as error:
-
-        await status.edit_text(
-            f"❌ Error:\n\n{error}"
-        )
-
-        safe_delete(video_path)
+        await release_user(user_id)
