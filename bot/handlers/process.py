@@ -1,10 +1,8 @@
-from aiogram import Router
 from aiogram.types import FSInputFile, Message
 
 from bot.ai.highlights import generate_highlight_timestamps
 from bot.video.clipper import create_clip
-
-router = Router()
+from bot.utils.cleanup import safe_delete
 
 
 async def process_video(
@@ -15,42 +13,70 @@ async def process_video(
 ):
 
     status = await message.answer(
-        "🤖 Analyzing video..."
+        "🔍 Analyzing Video... 10%"
     )
 
-    timestamps = generate_highlight_timestamps(
-        video_path,
-        total_clips
-    )
+    try:
 
-    await status.edit_text(
-        "✂️ Creating clips..."
-    )
-
-    created_clips = []
-
-    for timestamp in timestamps:
-
-        clip_path = create_clip(
+        timestamps = generate_highlight_timestamps(
             video_path,
-            timestamp,
-            clip_duration
+            total_clips
         )
 
-        created_clips.append(clip_path)
-
-    await status.edit_text(
-        f"📤 Sending {len(created_clips)} clips..."
-    )
-
-    for clip in created_clips:
-
-        video = FSInputFile(clip)
-
-        await message.answer_video(
-            video=video
+        await status.edit_text(
+            "🤖 Highlights Found... 30%"
         )
 
-    await status.edit_text(
-        "✅ Done!"
-    )
+        created_clips = []
+
+        total = len(timestamps)
+
+        for index, timestamp in enumerate(
+            timestamps,
+            start=1
+        ):
+
+            clip_path = create_clip(
+                video_path,
+                timestamp,
+                clip_duration
+            )
+
+            created_clips.append(
+                clip_path
+            )
+
+            progress = int(
+                30 + (index / total) * 50
+            )
+
+            await status.edit_text(
+                f"✂️ Creating Clips... {progress}%"
+            )
+
+        await status.edit_text(
+            "📤 Uploading Clips... 90%"
+        )
+
+        for clip in created_clips:
+
+            await message.answer_video(
+                video=FSInputFile(clip)
+            )
+
+        await status.edit_text(
+            "✅ Completed 100%"
+        )
+
+        safe_delete(video_path)
+
+        for clip in created_clips:
+            safe_delete(clip)
+
+    except Exception as error:
+
+        await status.edit_text(
+            f"❌ Error:\n\n{error}"
+        )
+
+        safe_delete(video_path)
