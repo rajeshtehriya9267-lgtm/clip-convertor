@@ -4,7 +4,11 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 router = Router()
 
+# Temporary user settings
 user_settings = {}
+
+# User video paths
+video_storage = {}
 
 
 @router.callback_query(F.data.startswith("duration_"))
