@@ -39,6 +39,11 @@ async def video_handler(message: Message):
         message.bot,
         message.video
     )
+    from bot.handlers.callbacks import video_storage
+
+video_storage[
+    message.from_user.id
+] = filepath
 
     await status.edit_text(
         f"✅ Video Saved\n\n"
