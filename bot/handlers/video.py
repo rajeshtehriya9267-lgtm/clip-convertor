@@ -1,5 +1,6 @@
 from aiogram import Router
 from aiogram.types import Message
+from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 router = Router()
 
@@ -13,10 +14,18 @@ async def video_handler(message: Message):
             "❌ Maximum allowed video length is 20 minutes."
         )
 
+    kb = InlineKeyboardBuilder()
+
+    kb.button(text="10s", callback_data="duration_10")
+    kb.button(text="15s", callback_data="duration_15")
+    kb.button(text="30s", callback_data="duration_30")
+    kb.button(text="60s", callback_data="duration_60")
+
+    kb.adjust(2)
+
     await message.answer(
-        "✅ Video received.\n\n"
-        "Select clip duration:\n"
-        "10s • 15s • 30s • 60s"
+        "🎬 Select Clip Duration",
+        reply_markup=kb.as_markup()
     )
 
 
@@ -25,12 +34,18 @@ async def youtube_handler(message: Message):
 
     text = message.text or ""
 
-    if (
-        "youtube.com" in text
-        or "youtu.be" in text
-    ):
+    if "youtube.com" in text or "youtu.be" in text:
+
+        kb = InlineKeyboardBuilder()
+
+        kb.button(text="10s", callback_data="duration_10")
+        kb.button(text="15s", callback_data="duration_15")
+        kb.button(text="30s", callback_data="duration_30")
+        kb.button(text="60s", callback_data="duration_60")
+
+        kb.adjust(2)
+
         await message.answer(
-            "🔗 YouTube link received.\n\n"
-            "Select clip duration:\n"
-            "10s • 15s • 30s • 60s"
+            "🎬 Select Clip Duration",
+            reply_markup=kb.as_markup()
         )
