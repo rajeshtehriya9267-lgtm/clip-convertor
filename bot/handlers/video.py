@@ -4,6 +4,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from bot.video.downloader import download_telegram_video
 from bot.video.youtube import download_youtube_video
+from bot.handlers.callbacks import video_storage
 
 router = Router()
 
@@ -39,16 +40,14 @@ async def video_handler(message: Message):
         message.bot,
         message.video
     )
-    from bot.handlers.callbacks import video_storage
 
-video_storage[
-    message.from_user.id
-] = filepath
+    video_storage[
+        message.from_user.id
+    ] = filepath
 
     await status.edit_text(
-        f"✅ Video Saved\n\n"
-        f"📁 {filepath}\n\n"
-        f"🎬 Select Clip Duration",
+        "✅ Video Received\n\n"
+        "🎬 Select Clip Duration",
         reply_markup=duration_keyboard()
     )
 
@@ -66,16 +65,21 @@ async def youtube_handler(message: Message):
     )
 
     try:
+
         filepath = await download_youtube_video(text)
 
+        video_storage[
+            message.from_user.id
+        ] = filepath
+
         await status.edit_text(
-            f"✅ YouTube Video Saved\n\n"
-            f"📁 {filepath}\n\n"
-            f"🎬 Select Clip Duration",
+            "✅ YouTube Video Ready\n\n"
+            "🎬 Select Clip Duration",
             reply_markup=duration_keyboard()
         )
 
     except Exception as e:
+
         await status.edit_text(
             f"❌ Download Failed\n\n{e}"
         )
