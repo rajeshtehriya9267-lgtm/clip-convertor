@@ -6,6 +6,7 @@ from bot.config import BOT_TOKEN
 
 from bot.handlers.start import router as start_router
 from bot.handlers.video import router as video_router
+from bot.handlers.callbacks import router as callback_router
 
 bot = Bot(
     token=BOT_TOKEN,
@@ -18,6 +19,7 @@ dp = Dispatcher()
 
 dp.include_router(start_router)
 dp.include_router(video_router)
+dp.include_router(callback_router)
 
 async def main():
     await dp.start_polling(bot)
