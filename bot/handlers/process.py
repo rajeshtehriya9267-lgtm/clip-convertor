@@ -1,3 +1,7 @@
+from bot.utils.queue import (
+    acquire_user,
+    release_user
+)
 from aiogram.types import FSInputFile, Message
 
 from bot.ai.highlights import generate_highlight_timestamps
