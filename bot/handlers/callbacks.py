@@ -1,5 +1,5 @@
 from aiogram import Router, F
-from aiogram.types import CallbackQuery
+from aiogram.types import CallbackQuery, Message
 
 from bot.handlers.process import process_video
 
@@ -18,79 +18,47 @@ async def duration_callback(callback: CallbackQuery):
         callback.data.split("_")[1]
     )
 
-    if user_id not in user_settings:
-        user_settings[user_id] = {}
-
-    user_settings[user_id]["duration"] = duration
-
-    from aiogram.utils.keyboard import InlineKeyboardBuilder
-
-    kb = InlineKeyboardBuilder()
-
-    kb.button(
-        text="3 Clips",
-        callback_data="clips_3"
-    )
-
-    kb.button(
-        text="5 Clips",
-        callback_data="clips_5"
-    )
-
-    kb.button(
-        text="10 Clips",
-        callback_data="clips_10"
-    )
-
-    kb.adjust(1)
+    user_settings[user_id] = {
+        "duration": duration
+    }
 
     await callback.message.edit_text(
-        f"✅ Duration: {duration}s\n\n"
-        "🎬 Select Number Of Clips",
-        reply_markup=kb.as_markup()
+        f"✅ Duration Selected: {duration}s\n\n"
+        "✍️ Send clip count (Example: 3, 5, 10)"
     )
 
     await callback.answer()
 
 
-@router.callback_query(F.data.startswith("clips_"))
-async def clips_callback(callback: CallbackQuery):
+@router.message(lambda m: m.text and m.text.isdigit())
+async def clip_count_handler(message: Message):
 
-    user_id = callback.from_user.id
-
-    clips = int(
-        callback.data.split("_")[1]
-    )
+    user_id = message.from_user.id
 
     if user_id not in user_settings:
-        user_settings[user_id] = {}
-
-    user_settings[user_id]["clips"] = clips
-
-    duration = user_settings[user_id].get(
-        "duration",
-        30
-    )
-
-    video_path = video_storage.get(user_id)
-
-    if not video_path:
-
-        await callback.message.edit_text(
-            "❌ No video found.\n\nSend a video first."
-        )
-
         return
 
-    await callback.message.edit_text(
-        "🚀 Processing Started..."
-    )
+    if user_id not in video_storage:
+        await message.answer(
+            "❌ Send a video first."
+        )
+        return
+
+    clips = int(message.text)
+
+    if clips < 1 or clips > 20:
+        await message.answer(
+            "❌ Clip count must be between 1 and 20."
+        )
+        return
+
+    duration = user_settings[user_id]["duration"]
+
+    video_path = video_storage[user_id]
 
     await process_video(
-        callback.message,
+        message,
         video_path,
         duration,
         clips
     )
-
-    await callback.answer()
