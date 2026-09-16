@@ -2,7 +2,10 @@ from aiogram import Router
 from aiogram.types import Message
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
+from bot.video.downloader import download_telegram_video
+
 router = Router()
+
 
 @router.message(lambda message: message.video is not None)
 async def video_handler(message: Message):
@@ -14,6 +17,15 @@ async def video_handler(message: Message):
             "❌ Maximum allowed video length is 20 minutes."
         )
 
+    status = await message.answer(
+        "📥 Downloading video..."
+    )
+
+    filepath = await download_telegram_video(
+        message.bot,
+        message.video
+    )
+
     kb = InlineKeyboardBuilder()
 
     kb.button(text="10s", callback_data="duration_10")
@@ -23,8 +35,10 @@ async def video_handler(message: Message):
 
     kb.adjust(2)
 
-    await message.answer(
-        "🎬 Select Clip Duration",
+    await status.edit_text(
+        f"✅ Video Saved\n\n"
+        f"📁 {filepath}\n\n"
+        f"🎬 Select Clip Duration",
         reply_markup=kb.as_markup()
     )
 
@@ -46,6 +60,7 @@ async def youtube_handler(message: Message):
         kb.adjust(2)
 
         await message.answer(
+            "🔗 YouTube Link Received\n\n"
             "🎬 Select Clip Duration",
             reply_markup=kb.as_markup()
         )
