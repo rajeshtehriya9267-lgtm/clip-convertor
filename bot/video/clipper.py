@@ -35,8 +35,10 @@ def create_clip(
     ]
 
     subprocess.run(
-        command,
-        capture_output=True
+    command,
+    capture_output=True,
+    text=True,
+    check=True
     )
 
     return output_file
